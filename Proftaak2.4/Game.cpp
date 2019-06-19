@@ -16,7 +16,6 @@ namespace Game
 {
 	int windowWidth, windowHeight;
 
-	Camera camera;
 	std::vector<GameObject*> objects;
 	std::vector<GameObject*> objectsInLayer;
 	std::vector<GameObject*> cornersInLayer;
@@ -40,7 +39,6 @@ namespace Game
 		glShadeModel(GL_SMOOTH);
 		glEnable(GL_COLOR_MATERIAL);
 		glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
-		camera = Camera(10, 0, 0, 0);
 		createRoom();
 		createRubicsCube(1.0f);
 	}

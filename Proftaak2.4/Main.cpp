@@ -18,11 +18,11 @@ using namespace std;
 
 struct Camera
 {
-	float posX = 10;
-	float posY = 0;
-	float rotX = 0;
-	float rotY = 0;
-	float posZ = 0;
+	float posX = -7;
+	float posY = -7;
+	float rotX = 45;
+	float rotY = 315;
+	float posZ = -7;
 	float rotZ = 0;
 } camera;
 
@@ -36,6 +36,8 @@ int windowWidth = WINDOW_WIDTH;
 int windowHeight = WINDOW_HEIGHT;
 GLuint texturePack;
 const char* textureFilename = "texturePack.png";
+
+void resetCamera(void);
 
 void reshape(int w, int h)
 {
@@ -109,6 +111,7 @@ void idle() {
 	}
 	else if (skeys[5]) {
 		Game::resetRubiks();
+		resetCamera();
 	}
 	Game::update(deltaTime);
 	glutPostRedisplay();
@@ -133,6 +136,15 @@ void mousePassiveMotion(int x, int y)
 		justMovedMouse = false;
 }
 
+void resetCamera() {
+	camera.posX = -7;
+	camera.posY = -7;
+	camera.posZ = -7;
+	camera.rotX = 45;
+	camera.rotY = 315;
+	camera.rotZ = 0;
+}
+
 void keyboard(unsigned char key, int x, int  y) {
 	keys[key] = true;
 
@@ -140,6 +152,7 @@ void keyboard(unsigned char key, int x, int  y) {
 		exit(0);
 	else if (key == 32) {
 		Game::resetRubiks();
+		resetCamera();
 	}
 
 	cout << "\r\nKey: " << key;
