@@ -5,10 +5,58 @@
 GameObject::GameObject(int objectId)
 {
 	this->ObjectId = objectId;
+	glPushMatrix();
+	glLoadIdentity();
+	glGetFloatv(GL_MODELVIEW_MATRIX, matrix);
+	glPopMatrix();
 }
 
 GameObject::~GameObject()
 {
+}
+
+void GameObject::reset()
+{
+	glPushMatrix();
+	glLoadIdentity();
+	glGetFloatv(GL_MODELVIEW_MATRIX, matrix);
+	glPopMatrix();
+}
+
+Vec3f GameObject::position()
+{
+	//[a,b,c,d]   [x]   | 
+	//[e,f,g,h] * [y] = | 
+	//[i,j,k,l]   [z]   |
+	//[m,n,o,p]   [w]   |
+	return Vec3f(matrix[12], matrix[13], matrix[14]);
+}
+
+void GameObject::printMatrix() {
+	std::cout << "\r\nMatrix of GameObject: " << this->ObjectId;
+	for (int i = 0; i < 16; i += 4) {
+		std::cout << "\r\n " << matrix[i] << "," << matrix[i+1] << "," << matrix[i+2] << "," << matrix[i+3];
+	}
+}
+
+
+void GameObject::translate(const Vec3f &pos)
+{
+	glPushMatrix();
+	glLoadMatrixf(matrix);
+	glTranslatef(pos.x, pos.y, pos.z);
+	glGetFloatv(GL_MODELVIEW_MATRIX, matrix);
+	glPopMatrix();
+}
+
+void GameObject::rotate(float angle, const Vec3f & axis)
+{
+	glPushMatrix();
+	glLoadIdentity();
+	glRotatef(angle, axis.x, axis.y, axis.z);
+	glMultMatrixf(matrix);
+	glGetFloatv(GL_MODELVIEW_MATRIX, matrix);
+	glPopMatrix();
 }
 
 void GameObject::addComponent(Component* component)
@@ -32,11 +80,8 @@ void GameObject::draw()
 		return;
 
 	glPushMatrix();
-	glTranslatef(position.x, position.y, position.z);
-	glRotatef(rotation.x, 1, 0, 0);
-	glRotatef(rotation.y, 0, 1, 0);
-	glRotatef(rotation.z, 0, 0, 1);
-	glScalef(scale.x, scale.y, scale.z);
+	glMultMatrixf(matrix);
+
 	drawComponent->draw();
 	glPopMatrix();
 }

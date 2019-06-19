@@ -10,22 +10,15 @@
 #include "ObjectModel.h"
 #include <math.h>
 
-#define APP_NAME "Game"
+#define APP_NAME "Rubics Cube"
 #define WINDOW_WIDTH 1200
 #define WINDOW_HEIGHT 800
 
 using namespace std;
 
-//up 0 --> white
-//down 1 --> yellow
-//left 2 --> green
-//right 3 --> blue
-//front 4 --> red 
-//back 5 --> orange
-
 struct Camera
 {
-	float posX = 0;
+	float posX = 10;
 	float posY = 0;
 	float rotX = 0;
 	float rotY = 0;
@@ -37,7 +30,7 @@ struct Camera
 //			Variables
 //-----------------------------
 bool keys[256];
-bool skeys[5]; //for arrow keys
+bool skeys[6]; //for arrow keys, spacebar
 
 int windowWidth = WINDOW_WIDTH;
 int windowHeight = WINDOW_HEIGHT;
@@ -114,6 +107,9 @@ void idle() {
 		camera.posX -= 0.1;
 		//cout << "\r\nRIGHT arrow key";
 	}
+	else if (skeys[5]) {
+		Game::resetRubiks();
+	}
 	Game::update(deltaTime);
 	glutPostRedisplay();
 }
@@ -142,35 +138,38 @@ void keyboard(unsigned char key, int x, int  y) {
 
 	if (key == 27)
 		exit(0);
-	//up 0
+	else if (key == 32) {
+		Game::resetRubiks();
+	}
+
 	cout << "\r\nKey: " << key;
 	if (keys['u']) {
 		cout << "\r\nup anticlockwise";
-		//Game::rotateCubeU(false);
+		Game::rotateCubeU(false);
 	}
 	if (keys['U']) {
 		cout << "\r\nUp clockwise";
-		//Game::rotateCubeU(true);
+		Game::rotateCubeU(true);
 	}
 
 	//down 1
 	if (keys['d']) {
 		cout << "\r\ndown anticlockwise";
-		//Game::rotateCubeD(false);
+		Game::rotateCubeD(false);
 	}
 	if (keys['D']) {
 		cout << "\r\nDown clockwise";
-		//Game::rotateCubeD(true);
+		Game::rotateCubeD(true);
 	}
 
 	//left 2
 	if (keys['l']) {
 		cout << "\r\nleft anticlockwise";
-		//Game::rotateCubeL(false);
+		Game::rotateCubeL(false);
 	}
 	if (keys['L']) {
 		cout << "\r\nLeft clockwise";
-		//Game::rotateCubeL(true);
+		Game::rotateCubeL(true);
 	}
 
 	//right 3
@@ -191,7 +190,6 @@ void keyboard(unsigned char key, int x, int  y) {
 	if (keys['F']) {
 		cout << "\r\nFront clockwise";
 		Game::rotateCubeF(true);
-
 	}
 
 	//back 5

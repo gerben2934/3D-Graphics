@@ -7,16 +7,12 @@
 int textureID;
 
 float u, v, u2, v2;
-float deltaSize = 0.33f;
+const float DELTASIZE = 0.33f;
 
-CubeComponent::CubeComponent(float size, int cubeId, GLuint textureID, bool center, bool edge, bool corner) {
+CubeComponent::CubeComponent(float size, int cubeId, GLuint textureID) {
 	this->size = size;
 	this->textureID = textureID;
 	this->cubeId = cubeId;
-	this->center = center;
-	this->edge = edge;
-	this->corner = corner;
-	swapped = false;
 }
 
 CubeComponent::~CubeComponent() {
@@ -53,8 +49,8 @@ void CubeComponent::draw() {
 
 	u = getTextureX(4);
 	v = getTextureY(4);
-	u2 = (u + deltaSize);
-	v2 = (v + deltaSize);
+	u2 = (u + DELTASIZE);
+	v2 = (v + DELTASIZE);
 
 	glBegin(GL_QUADS);
 	glColor3f(1.0f, 1.0f, 1.0f);
@@ -71,9 +67,8 @@ void CubeComponent::draw() {
 	//back
 	u = getTextureX(5);
 	v = getTextureY(5);
-	u2 = (u + deltaSize);
-	v2 = (v + deltaSize);
-	//std::cout << "\r\nU: " << u << " V: " << v << " u2: " << u2 << " v2: " << v2;
+	u2 = (u + DELTASIZE);
+	v2 = (v + DELTASIZE);
 	glBegin(GL_QUADS);
 	glColor3f(1.0f, 1.0f, 1.0f);
 	glTexCoord2f(u, v);
@@ -87,10 +82,10 @@ void CubeComponent::draw() {
 	glEnd();
 
 	//left
-	u = getTextureX(2);
-	v = getTextureY(2);
-	u2 = (u + deltaSize);
-	v2 = (v + deltaSize);
+	u = getTextureX(3);
+	v = getTextureY(3);
+	u2 = (u + DELTASIZE);
+	v2 = (v + DELTASIZE);
 	glBegin(GL_QUADS);
 	glTexCoord2f(u, v);
 	glVertex3f(-size, -size, -size);
@@ -103,10 +98,10 @@ void CubeComponent::draw() {
 	glEnd();
 
 	//right
-	u = getTextureX(3);
-	v = getTextureY(3);
-	u2 = (u + deltaSize);
-	v2 = (v + deltaSize);
+	u = getTextureX(2);
+	v = getTextureY(2);
+	u2 = (u + DELTASIZE);
+	v2 = (v + DELTASIZE);
 	glBegin(GL_QUADS);
 	glTexCoord2f(u, v);
 	glVertex3f(size, -size, -size);
@@ -118,11 +113,11 @@ void CubeComponent::draw() {
 	glVertex3f(size, -size, size);
 	glEnd();
 
-	//up
-	u = getTextureX(0);
-	v = getTextureY(0);
-	u2 = (u + deltaSize);
-	v2 = (v + deltaSize);
+	//bottom
+	u = getTextureX(1);
+	v = getTextureY(1);
+	u2 = (u + DELTASIZE);
+	v2 = (v + DELTASIZE);
 	glBegin(GL_QUADS);
 	glTexCoord2f(u, v);
 	glVertex3f(-size, -size, -size);
@@ -134,11 +129,18 @@ void CubeComponent::draw() {
 	glVertex3f(-size, -size, size);
 	glEnd();
 
-	//bottom
-	u = getTextureX(1);
-	v = getTextureY(1);
-	u2 = (u + deltaSize);
-	v2 = (v + deltaSize);
+	//top
+	if (cubeId == 17) {
+		u = getTextureX(6);
+		v = getTextureY(6);
+	}
+	else {
+		u = getTextureX(0);
+		v = getTextureY(0);
+	}
+
+	u2 = (u + DELTASIZE);
+	v2 = (v + DELTASIZE);
 	glBegin(GL_QUADS);
 	glTexCoord2f(u, v);
 	glVertex3f(-size, size, -size);

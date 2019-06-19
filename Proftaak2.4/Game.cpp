@@ -8,6 +8,7 @@
 #include "Camera.hpp"
 #include "GameObject.h"
 #include "CubeComponent.h"
+#include "LightComponent.h"
 
 using namespace std;
 
@@ -20,38 +21,38 @@ namespace Game
 	std::vector<GameObject*> objectsInLayer;
 	std::vector<GameObject*> cornersInLayer;
 	std::vector<GameObject*> edgesInLayer;
-	std::vector<int> centerIndexes{ 5, 11, 13, 15, 17, 23 };
-	std::vector<int> edgeIndexes{ 2, 4, 6, 8, 10, 12, 16, 18, 20, 22, 24, 26 };
-	std::vector<int> cornerIndexes = { 1, 3, 7, 9, 19, 21, 25, 27 };
-
-	GameObject* blockPositions[CUBE_SIZE][CUBE_SIZE][CUBE_SIZE];
-
 	void createRubicsCube(float size = 1.0f);
+	void createRoom(void);
+
+	bool turning = false;
+
+	Vec3f mult(float* mat, const Vec3f &v)
+	{
+		return Vec3f(
+			mat[0] * v.x + mat[4] * v.y + mat[8] * v.z + mat[12],
+			mat[1] * v.x + mat[5] * v.y + mat[9] * v.z + mat[13],
+			mat[2] * v.x + mat[6] * v.y + mat[10] * v.z + mat[14]
+		);
+	}
 
 	void loadContent()
 	{
-		camera = Camera(0, 0, 0, 0);
-		GameObject* room = new GameObject(0);
-		objects.push_back(room);
-
-		//EXAMPLE CUBES
+		glShadeModel(GL_SMOOTH);
+		glEnable(GL_COLOR_MATERIAL);
+		glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
+		camera = Camera(10, 0, 0, 0);
+		createRoom();
 		createRubicsCube(1.0f);
 	}
+
+	int currentTime = 0;
+	int newTime = 0;
 
 	void update(float deltaTime) {
 		for (const auto& o : objects)
 		{
-			o->draw();
 			o->update(deltaTime);
 		}
-	}
-
-	bool checkForInteger(std::vector<int> vector, int key) {
-		if (std::find(vector.begin(), vector.end(), key) != vector.end()) {
-			cout << "\r\n Found it!";
-			return true;
-		}
-		return false;
 	}
 
 	void draw() {
@@ -74,43 +75,49 @@ namespace Game
 		std::cout << "Closing game.\n";
 	}
 
+	void createRoom() {
+		GameObject* room = new GameObject(0);
+		room->addComponent(new LightComponent(Vec3f(0, 0, 0), 1.0f));
+		objects.push_back(room);
+	}
+
 	void createRubicsCube(float size) {
 		//layer 1: 9 objects
 		int cubeId = 1;
-		int centers = 0;
-		int corners = 0;
-		int edges = 0;
 
 		for (int z = 0; z < CUBE_SIZE; z++) {
 			for (int y = 0; y < CUBE_SIZE; y++) {
 				for (int x = 0; x < CUBE_SIZE; x++) {
 					GameObject* cube = new GameObject(cubeId);
 					if (x != 1 && y != 1 && z != 1) {
-						CubeComponent* component = new CubeComponent(size, cubeId, 1, false, false, true);
+						CubeComponent* component = new CubeComponent(size, cubeId, 1);
 						cube->addComponent(component);
-						corners++;
 					}
 					else if ((x == 1 && z == 1) || (x == 1 && y == 1)) {
-						CubeComponent* component = new CubeComponent(size, cubeId, 1, true, false, false);
+						CubeComponent* component = new CubeComponent(size, cubeId, 1);
 						cube->addComponent(component);
-						centers++;
 					}
 					else {
-						CubeComponent* component = new CubeComponent(size, cubeId, 1, false, true, false);
+						CubeComponent* component = new CubeComponent(size, cubeId, 1);
 						cube->addComponent(component);
-						edges++;
 					}
-					Vec3f vector = Vec3f(x + x * size, y + y * size, z + z * size);
-
-					cube->position = vector;
-					blockPositions[x][y][z] = cube;
+					Vec3f vector = Vec3f(2 * x - 2, 2 * y - 2, 2 * z - 2);
+					cube->translate(vector);
 					objects.push_back(cube);
 					cubeId++;
-					cout << "\r\nCorners: " << corners << " edges: " << edges << " centers: " << centers;
 				}
 			}
 		}
 		cout << "\r\nObjectCount: " << objects.size();
+	}
+
+	void resetRubiks() {
+		for (auto& o : objects)
+			delete o;
+		objects.clear();
+		createRubicsCube(1.0f);
+
+		cout << "\r\n Cube reset!";
 	}
 
 	//			    ++
@@ -132,366 +139,157 @@ namespace Game
 	//		  ++
 
 	void rotateCubeF(bool clockWise) {
-
-		cout << "\r\nRotate F():";
-		Vec3f blockPositionsInLayer[CUBE_SIZE][CUBE_SIZE];
-
-		int cornerRotations = 0;
-		int edgeRotations = 0;
-
-		for (auto obj : objects)
-		{
-			//lijst met laag, hieraan dit obj toevoegen. 
-			if (obj->ObjectId > 0) {
-				if (obj->position.z == 4) {
-					obj->rotation.z -= 90;
-					
-					//obj->rotation.y -= 90;
-
-					//laag bekend
-					objectsInLayer.push_back(obj);
-					int cubeId = obj->getComponent<CubeComponent>()->cubeId;
-
-					//cout << "\r\nObjectID: " << obj->ObjectId;
-					//cout << "\r\nObject at: " << obj->position.x << "," << obj->position.y << "," << obj->position.z;
-
-					if (obj->getComponent<CubeComponent>()->corner) {
-						//cout << "\r\n Found corner! at: " << cubeId;
-						cornersInLayer.push_back(obj);
-					}
-					else if (obj->getComponent<CubeComponent>()->edge) {
-						//cout << "\r\n Found edge! at: " << cubeId;
-						edgesInLayer.push_back(obj);
+		if (!turning) {
+			turning = true;
+			cout << "\r\nRotate F():";
+			for (auto obj : objects)
+			{
+				//lijst met laag, hieraan dit obj toevoegen. 
+				if (obj->ObjectId > 0) {
+					Vec3f pos = obj->position();
+					if (fabs(pos.z - 2) < 0.01) {
+						objectsInLayer.push_back(obj);
 					}
 				}
 			}
+
+			//for (int i = 0; i < 9; i++) {
+
+			for (auto obj : objectsInLayer) {
+				obj->rotate(-90, Vec3f(0, 0, 1));
+			}
+			//}
+
+			objectsInLayer.clear();
+			turning = false;
 		}
-
-		for (auto obj : cornersInLayer) {
-			//cout << "\r\nObj isCorner(): " << obj->getComponent<CubeComponent>()->corner;
-			//cout << "\r\nPos: x: " << obj->position.x << " y: " << obj->position.y << " z: " << obj->position.z;
-			if ((obj->position.x == 0) && (obj->position.y == 0)) { //links onder --> links boven
-				//cout << "\r\n Links onder";
-				obj->position.y = 4;
-				//blockPositionsInLayer[0][0] = obj->position;
-				cornerRotations++;
-
-			}
-			else if ((obj->position.x == 0) && (obj->position.y == 4)) { //links boven --> rechts boven
-				//cout << "\r\n Links boven";
-				obj->position.x = 4;
-				//blockPositionsInLayer[0][4 / 2] = obj->position;
-				cornerRotations++;
-			}
-			else if ((obj->position.x == 4) && (obj->position.y == 4)) { //rechts boven --> rechts onder
-				//cout << "\r\r Rechts boven";
-				obj->position.y = 0;
-				//blockPositionsInLayer[4/2][4 / 2] = obj->position;
-				cornerRotations++;
-
-			}
-			else if ((obj->position.x == 4) && (obj->position.y == 0)) { //rechts onder --> links onder
-				//cout << "\r\n Rechts onder";
-				obj->position.x = 0;
-				//blockPositionsInLayer[4/2][0] = obj->position;
-				cornerRotations++;
-			}
-		}
-
-		for (auto obj : edgesInLayer) {
-			//cout << "\r\nObj isEdge(): " << obj->getComponent<CubeComponent>()->edge;
-			//cout << "\r\nPos: x: " << obj->position.x << " y: " << obj->position.y << " z: " << obj->position.z;
-			if ((obj->position.x == 2) && (obj->position.y == 0)) { //onder --> links
-				//cout << "\r\n Onder";
-				obj->position.x = 0;
-				obj->position.y = 2;
-				//blockPositionsInLayer[1][0] = obj->position;
-				edgeRotations++;
-			}
-			else if ((obj->position.x == 0) && (obj->position.y == 2)) { //links --> boven
-				//cout << "\r\n Links";
-				obj->position.x = 2;
-				obj->position.y = 4;
-				//blockPositionsInLayer[0][1] = obj->position;
-				edgeRotations++;
-			}
-			else if ((obj->position.x == 2) && (obj->position.y == 4)) { //boven --> rechts
-				//cout << "\r\r Boven";
-				obj->position.x = 4;
-				obj->position.y = 2;
-				//blockPositionsInLayer[1][2] = obj->position;
-				edgeRotations++;
-			}
-			else if ((obj->position.x == 4) && (obj->position.y == 2)) { //rechts --> onder
-				//cout << "\r\n Rechts";
-				obj->position.x = 2;
-				obj->position.y = 0;
-				//blockPositionsInLayer[2][1] = obj->position;
-				edgeRotations++;
-
-
-			}
-		}
-
-		cout << "\r\nObjects: \r\n";
-		for (auto obj : objectsInLayer) {
-			cout << ", Object: " << obj->ObjectId;
-			//obj->position.z++;
-		}
-
-		cout << "\r\n ObjectsInLayer: " << objectsInLayer.size();
-		cout << "\r\n Edgerotations: " << edgeRotations;
-		cout << "\r\n Cornerrotations: " << cornerRotations;
-
-		/*int z = 2;
-
-		for (int y = 0; y < CUBE_SIZE - 1; y++) {
-			for (int x = 0; x < CUBE_SIZE - 1; x++) {
-				blockPositions[x][y][z] = blockPositionsInLayer[x][y]
-			}
-		}*/
-
-
-		//cout << "\r\n After:";
-
-		//cout << "\r\n==============================================\r\n";
-		//for (int y = CUBE_SIZE - 1; y != -1; y--) {
-		//	cout << "\r\n|" << blockPositions[0][y][2] << " | " << "|" << blockPositions[1][y][2] << " | " << "|" << blockPositions[2][y][2] << " | ";
-		//}
-		//cout << "\r\n==============================================\r\n";
-
-		objectsInLayer.clear();
-		cornersInLayer.clear();
-		edgesInLayer.clear();
 	}
 
 	void rotateCubeB(bool clockWise) {
-		for (auto obj : objects)
-		{
-			//lijst met laag, hieraan dit obj toevoegen. 
-			if (obj->ObjectId > 0) {
-				if (obj->position.z == 0) {
-					obj->rotation.z += 90;
-					//laag bekend
-					objectsInLayer.push_back(obj);
-					int cubeId = obj->getComponent<CubeComponent>()->cubeId;
-
-					cout << "\r\nObjectID: " << obj->ObjectId;
-					cout << "\r\nObject at: " << obj->position.x << "," << obj->position.y << "," << obj->position.z;
-
-					if (obj->getComponent<CubeComponent>()->corner) {
-						cout << "\r\n Found corner! at: " << cubeId;
-						cornersInLayer.push_back(obj);
-					}
-					else if (obj->getComponent<CubeComponent>()->edge) {
-						cout << "\r\n Found edge! at: " << cubeId;
-						edgesInLayer.push_back(obj);
+		if (!turning) {
+			turning = true;
+			cout << "\r\nRotate B():";
+			for (auto obj : objects)
+			{
+				//lijst met laag, hieraan dit obj toevoegen. 
+				if (obj->ObjectId > 0) {
+					Vec3f pos = obj->position();
+					if (fabs(pos.z + 2) < 0.01) {
+						objectsInLayer.push_back(obj);
 					}
 				}
 			}
-		}
 
-		for (auto obj : cornersInLayer) {
-			cout << "\r\nObj isCorner(): " << obj->getComponent<CubeComponent>()->corner;
-			cout << "\r\nPos: x: " << obj->position.x << " y: " << obj->position.y << " z: " << obj->position.z;
-			if ((obj->position.x == 0) && (obj->position.y == 0)) { //rechts onder --> links onder
-				cout << "\r\n Rechts onder";
-				obj->position.x = 4;
+			for (auto obj : objectsInLayer) {
+				obj->rotate(90, Vec3f(0, 0, 1));
 			}
-			else if ((obj->position.x == 0) && (obj->position.y == 4)) { //rechts boven --> rechts onder
-				cout << "\r\n Rechts boven";
-				obj->position.y = 0;
-			}
-			else if ((obj->position.x == 4) && (obj->position.y == 4)) { //links boven --> rechts boven 
-				cout << "\r\r Links boven";
-				obj->position.x = 0;
-			}
-			else if ((obj->position.x == 4) && (obj->position.y == 0)) { //links onder --> links boven
-				cout << "\r\n Links onder";
-				obj->position.y = 4;
-			}
-		}
 
-		objectsInLayer.clear();
-		cornersInLayer.clear();
-		edgesInLayer.clear();
+			objectsInLayer.clear();
+			turning = false;
+		}
 	}
 
-	//void rotateCubeL(bool clockWise) {
-	//	for (const auto& obj : objects)
-	//	{
-	//		//lijst met laag, hieraan dit obj toevoegen. 
-	//		if (obj->position.x == 0) {
-	//			objectsInLayer.push_back(obj);
-	//		}
-	//	}
-	//	cout << "\r\nLeft face layout: ";
-	//	for (const auto& obj : objectsInLayer) {
-	//		cout << "\r\nObjectID: " << obj->ObjectId;
-	//		cout << "\r\nObject at: " << obj->position.x << "," << obj->position.y << "," << obj->position.z;
-	//		if (clockWise) {
-	//			obj->rotation.x += 90;
-	//		}
-	//		else {
-	//			obj->rotation.x -= 90;
-	//		}
-	//	}
-	//	objectsInLayer.clear();
-	//}
+	void rotateCubeL(bool clockWise) {
+		if (!turning) {
+			turning = true;
+			cout << "\r\nRotate L():";
+			for (auto obj : objects)
+			{
+				//lijst met laag, hieraan dit obj toevoegen. 
+				if (obj->ObjectId > 0) {
+					Vec3f pos = obj->position();
+					if (fabs(pos.x + 2) < 0.01) {
+						objectsInLayer.push_back(obj);
+					}
+				}
+			}
+
+			//for (int i = 0; i < 9; i++) {
+			for (auto obj : objectsInLayer) {
+				obj->rotate(90, Vec3f(1, 0, 0));
+			}
+			//}
+
+			objectsInLayer.clear();
+			turning = false;
+		}
+	}
 
 	void rotateCubeR(bool clockWise) {
-
-		int cornerRotations = 0;
-		int edgeRotations = 0;
-		for (auto obj : objects)
-		{
-			//lijst met laag, hieraan dit obj toevoegen. 
-			if (obj->ObjectId > 0) {
-				if (obj->position.x == 4) {
-					obj->rotation.x -= 90;
-
-					//laag bekend
-					objectsInLayer.push_back(obj);
-					int cubeId = obj->getComponent<CubeComponent>()->cubeId;
-
-					cout << "\r\nObjectID: " << obj->ObjectId;
-					cout << "\r\nObject at: " << obj->position.x << "," << obj->position.y << "," << obj->position.z;
-
-					if (obj->getComponent<CubeComponent>()->corner) {
-						//cout << "\r\n Found corner! at: " << cubeId;
-						cornersInLayer.push_back(obj);
-					}
-					else if (obj->getComponent<CubeComponent>()->edge) {
-						//cout << "\r\n Found edge! at: " << cubeId;
-						edgesInLayer.push_back(obj);
+		if (!turning) {
+			turning = true;
+			cout << "\r\nRotate R():";
+			for (auto obj : objects)
+			{
+				//lijst met laag, hieraan dit obj toevoegen. 
+				if (obj->ObjectId > 0) {
+					Vec3f pos = obj->position();
+					if (fabs(pos.x - 2) < 0.01) {
+						objectsInLayer.push_back(obj);
 					}
 				}
 			}
+
+			//for (int i = 0; i < 9; i++) {
+			for (auto obj : objectsInLayer) {
+				obj->rotate(-90, Vec3f(1, 0, 0));
+			}
+			//}
+
+			objectsInLayer.clear();
+			turning = false;
 		}
+	}
 
-		for (auto obj : cornersInLayer) {
-			cout << "\r\nObj isCorner(): " << obj->getComponent<CubeComponent>()->corner;
-			cout << "\r\nPos: x: " << obj->position.x << " y: " << obj->position.y << " z: " << obj->position.z;
-			if ((obj->position.z == 4) && (obj->position.y == 0)) { //links onder --> links boven
-				cout << "\r\n Links onder";
-				obj->position.y = 4;
-				cornerRotations++;
+	void rotateCubeU(bool clockWise) {
+		if (!turning) {
+			turning = true;
+			cout << "\r\nRotate U():";
+			for (auto obj : objects)
+			{
+				//lijst met laag, hieraan dit obj toevoegen. 
+				if (obj->ObjectId > 0) {
+					Vec3f pos = obj->position();
+					if (fabs(pos.y - 2) < 0.01) {
+						objectsInLayer.push_back(obj);
+					}
+				}
 			}
-			else if ((obj->position.z == 4) && (obj->position.y == 4)) { //links boven --> rechts boven
-				cout << "\r\n Links boven";
-				obj->position.z = 0;
-				cornerRotations++;
 
+			//for (int i = 0; i < 9; i++) {
+			for (auto obj : objectsInLayer) {
+				obj->rotate(-90, Vec3f(0, 1, 0));
 			}
-			else if ((obj->position.z == 0) && (obj->position.y == 4)) { //rechts boven --> rechts onder
-				cout << "\r\r Rechts boven";
-				obj->position.y = 0;
-				cornerRotations++;
+			//}
 
-			}
-			else if ((obj->position.z == 0) && (obj->position.y == 0)) { //rechts onder --> links onder
-				cout << "\r\n Rechts onder";
-				obj->position.z = 4;
-				cornerRotations++;
-			}
+			objectsInLayer.clear();
+			turning = false;
 		}
+	}
 
-		for (auto obj : edgesInLayer) {
-			//cout << "\r\nObj isEdge(): " << obj->getComponent<CubeComponent>()->edge;
-			//cout << "\r\nPos: x: " << obj->position.x << " y: " << obj->position.y << " z: " << obj->position.z;
-			if ((obj->position.z == 2) && (obj->position.y == 0)) { //onder --> links
-				//cout << "\r\n Onder";
-				obj->position.z = 4;
-				obj->position.y = 2;
-				//blockPositionsInLayer[1][0] = obj->position;
-				edgeRotations++;
+	void rotateCubeD(bool clockWise) {
+		if (!turning) {
+			turning = true;
+			cout << "\r\nRotate U():";
+			for (auto obj : objects)
+			{
+				//lijst met laag, hieraan dit obj toevoegen. 
+				if (obj->ObjectId > 0) {
+					Vec3f pos = obj->position();
+					if (fabs(pos.y + 2) < 0.01) {
+						objectsInLayer.push_back(obj);
+					}
+				}
 			}
-			else if ((obj->position.z == 4) && (obj->position.y == 2)) { //links --> boven
-				//cout << "\r\n Links";
-				obj->position.z = 2;
-				obj->position.y = 4;
-				//blockPositionsInLayer[0][1] = obj->position;
-				edgeRotations++;
 
+			//for (int i = 0; i < 9; i++) {
+			for (auto obj : objectsInLayer) {
+				obj->rotate(90, Vec3f(0, 1, 0));
 			}
-			else if ((obj->position.z == 2) && (obj->position.y == 4)) { //boven --> rechts
-				//cout << "\r\r Boven";
-				obj->position.z = 0;
-				obj->position.y = 2;
-				//blockPositionsInLayer[1][2] = obj->position;
-				edgeRotations++;
+			//}
 
-			}
-			else if ((obj->position.z == 0) && (obj->position.y == 2)) { //rechts --> onder
-				//cout << "\r\n Rechts";
-				obj->position.z = 2;
-				obj->position.y = 0;
-				//blockPositionsInLayer[2][1] = obj->position;
-				edgeRotations++;
-
-
-			}
+			objectsInLayer.clear();
+			turning = false;
 		}
-
-		for (auto obj : objectsInLayer) {
-			cout << ", Object: " << obj->ObjectId;
-			//obj->position.x++;
-		}
-
-		cout << "\r\n ObjectsInLayer: " << objectsInLayer.size();
-		cout << "\r\n Edgerotations: " << edgeRotations;
-		cout << "\r\n Cornerrotations: " << cornerRotations;
-
-
-		objectsInLayer.clear();
-		cornersInLayer.clear();
-		edgesInLayer.clear();
 	}
 }
-
-//void rotateCubeU(bool clockWise) {
-//	for (const auto& obj : objects)
-//	{
-//		//lijst met laag, hieraan dit obj toevoegen. 
-//		if (obj->position.y == 4) {
-//			objectsInLayer.push_back(obj);
-//		}
-//	}
-
-//	cout << "\r\nUp face layout: ";
-//	for (const auto& obj : objectsInLayer) {
-//		cout << "\r\nObjectID: " << obj->ObjectId;
-//		cout << "\r\nObject at: " << obj->position.x << "," << obj->position.y << "," << obj->position.z;
-//		if (clockWise) {
-//			obj->rotation.y -= 90;
-//		}
-//		else {
-//			obj->rotation.y += 90;
-//		}
-//	}
-//	objectsInLayer.clear();
-//}
-//void rotateCubeD(bool clockWise) {
-//	for (const auto& obj : objects)
-//	{
-//		//lijst met laag, hieraan dit obj toevoegen. 
-//		if (obj->position.y == 0) {
-//			objectsInLayer.push_back(obj);
-//		}
-//	}
-
-//	cout << "\r\nDown face layout: ";
-//	for (const auto& obj : objectsInLayer) {
-//		cout << "\r\nObjectID: " << obj->ObjectId;
-//		cout << "\r\nObject at: " << obj->position.x << "," << obj->position.y << "," << obj->position.z;
-
-//		if (clockWise) {
-//			obj->rotation.y += 90;
-//		}
-//		else {
-//			obj->rotation.y -= 90;
-//		}
-//	}
-//	objectsInLayer.clear();
-//}
-//}

@@ -134,10 +134,9 @@
     <ClCompile Include="DrawComponent.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GameObject.cpp" />
+    <ClCompile Include="LightComponent.cpp" />
     <ClCompile Include="Main.cpp" />
-    <ClCompile Include="MoveToCompontent.cpp" />
     <ClCompile Include="ObjectModel.cpp" />
-    <ClCompile Include="SpinComponent.cpp" />
     <ClCompile Include="Vec.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -149,9 +148,8 @@
     <ClInclude Include="Enums.h" />
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="Globals.hpp" />
-    <ClInclude Include="MoveToComponent.h" />
+    <ClInclude Include="LightComponent.h" />
     <ClInclude Include="ObjectModel.h" />
-    <ClInclude Include="SpinComponent.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="Vec.h" />
   </ItemGroup>

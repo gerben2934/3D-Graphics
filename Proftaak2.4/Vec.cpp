@@ -34,6 +34,11 @@ Vec3f Vec3f::operator-(const Vec3f& other)
 	return Vec3f(x - other.x, y - other.y, z - other.z);
 }
 
+Vec3f Vec3f::operator-()
+{
+	return Vec3f(-x, -y, -z);
+}
+
 Vec3f Vec3f::normalized() const
 {
 	float len = length();

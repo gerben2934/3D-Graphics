@@ -22,6 +22,8 @@ public:
 
 	Vec3f normalized() const;
 	float length() const;
+
+	Vec3f operator -();
 };
 
 class Vec2f

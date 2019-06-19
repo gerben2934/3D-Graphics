@@ -2,6 +2,7 @@
 
 #include <list>
 #include "Vec.h"
+#include <iostream>
 
 class Component;
 class DrawComponent;
@@ -15,9 +16,14 @@ public:
 	GameObject(int objectId);
 	~GameObject();
 
-	Vec3f position;
-	Vec3f rotation;
-	Vec3f scale = Vec3f(1, 1, 1);
+	float matrix[16];
+
+	void reset();
+	void translate(const Vec3f &pos);
+	void rotate(float angle, const Vec3f &axis);
+	Vec3f position();
+	void printMatrix();
+
 	int ObjectId;
 
 	void addComponent(Component* component);
@@ -35,8 +41,6 @@ public:
 				return t;
 		}
 	}
-
-
 
 	template<class T>
 	void removeComponent()

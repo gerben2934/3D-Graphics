@@ -8,7 +8,6 @@
 
 using namespace std;
 
-
 namespace Game
 {
 	const int CUBE_SIZE = 3;
@@ -32,7 +31,8 @@ namespace Game
 	// Gets called when app is closing.
 	void onClose();
 
-	bool checkForInteger(std::vector<int> vector, int key);
+	// For reset rubiks to solved state.
+	void resetRubiks();
 
 	//Rotation functions:
 	void rotateCubeF(bool clockWise);
